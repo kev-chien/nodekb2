@@ -1,0 +1,116 @@
+<% include partials/header %>
+<h2><%= title %> </h2>
+<hr>
+<h1><%= quiz.title %></h1>
+<h3><%= quiz.description %> </h3>
+<p>Created: <%= quiz.created_at %> </p><hr>
+
+<form method="POST" action="/quizzes/questions/edit/<%= quiz._id %>/<%= fillQuestion._id %>">
+  <div id="form-group" >
+    <label>Question </label>
+    <input class="form-control" name="question" type= "text" value="<%= fillQuestion.question %>">
+  </div>
+  <br>
+  <div id="form-group" >
+    <label>A </label>
+    <input class="form-group" name="choiceA" type= "text" value="<%= fillQuestion.choiceA %>">
+  </div>
+  <br>
+  <div id="form-group" >
+    <label>B </label>
+    <input class="form-group" name="choiceB" type= "text" value="<%= fillQuestion.choiceB %>">
+  </div>
+  <br>
+  <div id="form-group" >
+    <label>C </label>
+    <input class="form-control" name="choiceC" type= "text" value="<%= fillQuestion.choiceC %>">
+  </div>
+  <br>
+  <div id="form-group" >
+    <label>D </label>
+    <input class="form-control" name="choiceD" type="text" value="<%= fillQuestion.choiceD %>">
+  </div>
+  <br>
+
+  <% if(fillQuestion.choiceCorrect==='choiceA'){ %>
+    <label class="radio-inline"><input type="radio" name="choiceCorrect" checked="checked" value="choiceA">A</label>
+  <% }else{ %>
+    <label class="radio-inline"><input type="radio" name="choiceCorrect" value="choiceA">A</label>
+  <% } %>
+
+  <% if(fillQuestion.choiceCorrect==='choiceB'){ %>
+    <label class="radio-inline"><input type="radio" name="choiceCorrect" checked="checked" value="choiceB">B</label>
+  <% }else{ %>
+    <label class="radio-inline"><input type="radio" name="choiceCorrect" value="choiceB">B</label>
+  <% } %>
+
+  <% if(fillQuestion.choiceCorrect==='choiceC'){ %>
+    <label class="radio-inline"><input type="radio" name="choiceCorrect" checked="checked" value="choiceC">C</label>
+  <% }else{ %>
+    <label class="radio-inline"><input type="radio" name="choiceCorrect" value="choiceC">c</label>
+  <% } %>
+
+  <% if(fillQuestion.choiceCorrect==='choiceD'){ %>
+    <label class="radio-inline"><input type="radio" name="choiceCorrect" checked="checked" value="choiceD">D</label>
+  <% }else{ %>
+    <label class="radio-inline"><input type="radio" name="choiceCorrect" value="choiceD">D</label>
+  <% } %>
+
+
+  <input class = "btn btn-primary" type="submit" value="OK">
+</form>
+
+<hr>
+
+<ul class="list-group">
+  <% questions.forEach(function(question){ %>
+
+    <li class="list-group-item">
+
+        <div class="row">
+          <div class="col-md-12  col-sd-12">
+            <h3><%= question.question %> </h3>
+            <%= question.order %>
+            <%= question.choiceCorrect %>
+            <%= question.author %>
+            <%= question.included %>
+          </div>
+
+          <div class="col-md-5  col-sd-5">
+            <h3>
+              A <%= question.choiceA %>
+            </h3>
+          </div>
+          <div class="col-md-5  col-sd-5">
+            <h3>
+              B <%= question.choiceB %>
+            </h3>
+          </div>
+          <div class="col-md-2  col-sd-2">
+            <h3>
+              <a href="/quizzes/questions/edit/<%= quiz._id %>/<%= question._id %>" class="btn btn-primary" role="button">Edit</a>
+            </h3>
+          </div>
+          <div class="col-md-5  col-sd-5">
+            <h3>
+              C <%= question.choiceC %>
+            </h3>
+          </div>
+          <div class="col-md-5  col-sd-5">
+            <h3>
+             D <%= question.choiceD %>
+            </h3>
+          </div>
+          <div class="col-md-2  col-sd-2">
+            <h3>
+              <a href="#" class="btn btn-danger delete-question" data-id="<%= question._id %>" data-qid="<%= quiz._id %>" role="button">Delete</a>
+            </h3>
+          </div>
+        </div>
+    </li>
+  <%  })  %>
+
+</ul>
+
+
+<% include partials/footer %>
