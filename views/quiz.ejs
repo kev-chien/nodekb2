@@ -11,11 +11,18 @@
 
 <h5>description (required input field at creation) </h5><%= quiz.description %><hr>
 
+<h5>Students online: </h5>
+<p id="numStudents">0</p>
 
+<button id="startQuiz">Start Quiz</button>
+
+<button id="endQuiz">End Quiz</button>
+
+<h5>Questions</h5>
 <ul class="list-group">
   <% questions.forEach(function(question){ %>
       <%= question._id %><br>
-      <%= question.quiz_id %><br>
+      <span id="quizId"><%= question.quiz_id %></span>span><br>
       <%= question.question %><br>
       <%= question.order %><br>
       <%= question.choiceA %><br>
@@ -32,5 +39,36 @@
 
 </ul>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.1/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  const $numStudents = $('#numStudents');
+  const $startQuiz = $('#startQuiz');
+  const $endQuiz = $('#endQuiz');
+  const quizId = $('#quizId').html();
+
+  $startQuiz.click(function() {
+    socket.emit("start quiz", quizId);
+  });
+
+  socket.on("end quiz", function(msg) {
+    console.log(msg);
+  });
+
+  socket.on("user left", function(msg) {
+    console.log("users: " + msg.numUsers);
+    updateUsers(msg);
+  });
+
+  socket.on("user joined", function(msg) {
+    console.log("users: " + msg.numUsers);
+    updateUsers(msg);
+  });
+
+  const updateUsers = function(msg) {
+    $numStudents.html(msg.numUsers);
+  }
+</script>
 
 <% include partials/footer %>

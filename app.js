@@ -26,6 +26,10 @@ db.on('error', function(err){
 //just do this, like it makes a server
 const app = express();
 
+//socket.io initialization
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+
 // -------------------- VIEW ENGINE ------------------------
 // is this also middleware?
 // instead of res.send('hi');     res.json(people);
@@ -232,9 +236,24 @@ app.get('/quiz/:id',function(req,res){
         title: 'Play this Quiz',
         quiz: quiz,
         questions: questions
-        });
       });
     });
+  });
+})
+
+// Route for the Quiz Student View in student.ejs
+// the list of quizzes, click the quiz PLAY button, sends the quiz._id through URL
+// query the quiz entry for this  _id
+app.get('/student_quiz/:id',function(req,res){
+  Quiz.findById(req.params.id, function(err, quiz){
+    Question.find({ quiz_id: quiz._id}, function(err,questions){ // 5b1c0a5136bbf1389cfdb00c
+      res.render('student_quiz', {     //SEND TO QUIZ.EJS  PLAY PAGE
+        title: 'Play this Quiz',
+        quiz: quiz,
+        questions: questions
+      });
+    });
+  });
 });
 
 // Route for the Quiz EDIT button in index.ejs
@@ -427,6 +446,14 @@ app.delete('/quizzes/questions/delete/:pid', function(req,res){
   });
 });
 
+// Student view: student goes to a link with /student/some_id
+// I had some_id in mind as the class ID
+app.get('/student/:pid', function(req,res){
+  const roomId = req.params.pid;
+  res.render('student', {
+    roomId
+  })
+});
 
 // ------------- SERVER LISTENS TO BROWSER ---------------------
 //The server needs to listen to the browser, port 3000
@@ -435,6 +462,91 @@ app.delete('/quizzes/questions/delete/:pid', function(req,res){
 //if you didn't set up the routes yet:
   // browser localhost:3000 shows 'cannot GET /' cuz no homepage made yet. '/' is homepage
   // browser localhost:3000/about shows 'cannot GET /about' cuz no about.html view yet
-app.listen(3000, function(){
+http.listen(3000, function(){ /* need to change to http for socket.io */
   console.log('Server Started on Port 3000');
+});
+
+// ------------- SOCKET.IO SERVER SIDE ---------------------
+/*
+ * Initialize server side for Socket.io
+ *
+ * Sockets are formed ONLY between the SERVER and the CLIENT
+ * Clients include all students AND teacher
+ * quiz.ejs => teacher view, student.ejs => student view
+ * Anytime one of the above pages is loaded, a new client is started (even in the same browser,
+ * different tabs).
+ *
+ * Notice teacher and student are both CLIENTS so no direct socket exists between them
+ * Thus, whenever a teacher wants to emit a message, it first goes to the SERVER
+ * Then, the SERVER can emit (broadcast) the message to the rest of the clients (students)
+ * Vice versa, a student can emit to the server, the server can emit the msg to the teacher
+ *
+ * Note: socket.emit(...) sends to all clients, socket.broadcast.emit(...) sends to all other
+ * clients except the socket we received a message from
+*/
+
+var numUsers = 0;
+
+io.on('connection', (socket) => {
+  console.log("user connected");
+
+  var addedUser = false;
+
+  // when the client emits 'add user', this listens and executes
+  socket.on('add user', (username) => {
+    if (addedUser) return;
+
+    // we store the username in the socket session for this client
+    socket.username = username;
+    ++numUsers;
+    addedUser = true;
+    socket.emit('login', {
+      numUsers: numUsers
+    });
+    // echo globally, except to socket that we received the message from
+    socket.broadcast.emit('user joined', {
+      username: socket.username,
+      numUsers: numUsers
+    });
+    console.log("number of users: " + numUsers);
+  });
+
+  // when the user disconnects.. perform this
+  socket.on('disconnect', () => {
+    if (addedUser) {
+      --numUsers;
+
+      // echo globally that this client has left
+      socket.broadcast.emit('user left', {
+        username: socket.username,
+        numUsers: numUsers
+      });
+    }
+  });
+
+  // when teacher (a client) emits to start quiz, broadcast to other clients (students)
+  socket.on('start quiz', (quizId) => {
+
+    // METHOD 1: use Mongo directly to get javascript objects of questions
+    // get quiz questions from quizId
+
+    // I didn't get Method 1 to work, but I prefer Method 2 anyways
+    // In theory, Method 1 should work, it probably has to do with the weird Javascript scope rules
+    // or maybe because setting socket.questions doesn't copy an object?
+
+    // Quiz.findById(quizId, function(err, quiz){
+    //   Question.find({ quiz_id: quiz._id}, function(err,questionsFound){
+    //     socket.questions = questionsFound;
+    //   });
+    // });
+    // socket.broadcast.emit('start quiz', socket.questions);
+
+    // METHOD 2: send quizID, have the student client do a HTML GET request for a quiz view
+    socket.broadcast.emit('start quiz', quizId);
+  });
+
+  // when teacher (a client) emits to end quiz, broadcast to other clients (students)
+  socket.on('end quiz', () => {
+    socket.broadcast.emit('end quiz');
+  });
 });
